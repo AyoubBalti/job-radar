@@ -7,10 +7,10 @@ can't realistically get (wrong title, language or visa blockers), scores the res
 keywords + a local Ollama model, and writes an HTML and CSV report.
 
     pip install -r requirements.txt
-    python job_radar.py                    # full run
-    python job_radar.py --quick            # fewer searches
-    python job_radar.py --no-llm           # keyword scoring only
-    python job_radar.py --only boards,arbeitnow,relocateme
+    python radar.py                    # full run
+    python radar.py --quick            # fewer searches
+    python radar.py --no-llm           # keyword scoring only
+    python radar.py --only boards,arbeitnow,relocateme
 """
 from __future__ import annotations
 
@@ -687,11 +687,43 @@ a{{color:#0b57d0;text-decoration:none;font-weight:600}} .s{{color:#666;font-size
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+def demo_jobs() -> list[Job]:
+    """Sample postings to test filters, scoring and the report without scraping."""
+    def mk(title, company, location, desc, remote=False, country=""):
+        return Job(source="demo", title=title, company=company, location=location,
+                   url="https://example.com/demo/" + norm(title).replace(" ", "-"),
+                   description=desc, posted=NOW, remote=remote, country=country)
+    return [
+        mk("Backend Engineer (Python, AWS)", "Acme Cloud GmbH", "Berlin, Germany",
+           "Build serverless AWS systems with Python, TypeScript, Lambda, SQS and Terraform. "
+           "3+ years of experience. We offer visa sponsorship and a relocation package. "
+           "Working language is English.", country="germany"),
+        mk("AI Engineer (LLM)", "Shamrock AI", "Dublin, Ireland",
+           "Ship LLM features with Azure OpenAI, LangChain and Python on AWS. 2-4 years of experience. "
+           "We support Critical Skills permit applications and offer relocation assistance.", country="ireland"),
+        mk("Software Engineer", "Tulip Software BV", "Amsterdam, Netherlands",
+           "TypeScript and AWS microservices. You must have the right to work in the EU. "
+           "No visa sponsorship is available.", country="netherlands"),
+        mk("Software Engineer Backend", "Bavaria Systems", "Munich, Germany",
+           "Python, AWS, Docker. Fluent German (C1) is required; our team language is German.",
+           country="germany"),
+        mk("Staff Software Engineer", "BigCorp", "Paris, France",
+           "Lead architecture across teams. 10+ years of experience.", country="france"),
+        mk("Cloud Engineer", "Globex Remote", "Worldwide",
+           "Fully remote team. AWS, Terraform and Python. English is the working language.",
+           remote=True),
+        mk("Senior Backend Engineer", "Fintech SA", "Luxembourg",
+           "8+ years of experience with Python and AWS. Visa sponsorship and relocation support "
+           "available. English and French spoken.", country="luxembourg"),
+    ]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="job-radar 2.0")
     ap.add_argument("-c", "--config", default="config.yaml")
     ap.add_argument("--no-llm", action="store_true", help="keyword scoring only")
     ap.add_argument("--quick", action="store_true", help="first 2 terms per country, no sponsorship-phrased queries")
+    ap.add_argument("--demo", action="store_true", help="run on built-in sample jobs: no scraping, history untouched")
     ap.add_argument("--only", help="comma list: boards,arbeitnow,relocateme,remotive,remoteok,himalayas,adzuna")
     args = ap.parse_args()
 
@@ -700,6 +732,10 @@ def main() -> None:
     only = {x.strip() for x in args.only.split(",")} if args.only else None
 
     jobs: list[Job] = []
+    if args.demo:
+        log("Demo mode: using sample jobs, no scraping.")
+        jobs = demo_jobs()
+        only = set()  # nothing else runs
     if only is None or "boards" in only:
         searches = build_searches(cfg, args.quick)
         log(f"Boards: {len(searches)} searches on {', '.join(cfg.get('sites', []))}")
@@ -745,11 +781,12 @@ def main() -> None:
     stats["llm"] = sum(j.llm_used for j in jobs)
 
     state_path = cfg.get("state_file", "data/seen.json")
-    state = load_state(state_path)
+    state = {} if args.demo else load_state(state_path)
     for j in jobs:
         j.is_new = j.key not in state
         state.setdefault(j.key, NOW.date().isoformat())
-    save_state(state_path, state)
+    if not args.demo:
+        save_state(state_path, state)
 
     min_score = cfg.get("min_score_in_report", 50)
     shown = [j for j in jobs if j.score >= min_score and (j.is_new or not cfg.get("only_new_in_report", False))]
