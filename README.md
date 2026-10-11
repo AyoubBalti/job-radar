@@ -26,10 +26,10 @@ Local LLM (optional but recommended):
 
 ```bash
 # install Ollama from https://ollama.com, then:
-ollama pull qwen2.5:7b             # ~4.7 GB; needs ~8 GB RAM
+ollama pull qwen2.5:14b            # ~9 GB; needs ~16 GB RAM
 ```
 
-On a weaker machine, use a smaller model such as `qwen2.5:3b` and change `llm.model` in `config.yaml`.
+`qwen2.5:14b` is the default model and gives noticeably better scoring than smaller ones. On a weaker machine, use `qwen2.5:7b` (~4.7 GB, needs ~8 GB RAM) or `qwen2.5:3b`, and change `llm.model` in `config.yaml`.
 
 ## Usage
 
@@ -56,10 +56,11 @@ Open the newest file in `reports/` in your browser.
 
 ## Configuration
 
-Everything lives in `config.yaml`: searches (term, city, country), title filters, sponsorship and blocker phrases, the LLM model, the minimum score shown, and your profile text used for scoring.
+Everything lives in `config.yaml`: searches (term, city, country), title filters, sponsorship and blocker phrases, the LLM model (`qwen2.5:14b` by default), the minimum score shown, and your profile text used for scoring.
 
 ## Notes
 
 - Keep `results_per_search` modest. Job boards rate-limit heavy scraping; LinkedIn in particular may temporarily block your IP if you push it.
 - Scraping is for personal job searching. Respect each site's terms and don't redistribute the data.
 - The LLM can be wrong. Always read the posting before applying.
+- Scoring with `qwen2.5:14b` is slower than with 7b. If a run takes too long, lower `llm.max_jobs` or switch to a smaller model.
