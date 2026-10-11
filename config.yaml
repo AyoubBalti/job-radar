@@ -1,0 +1,77 @@
+# job-radar configuration. Edit freely.
+
+# Each search runs on every site below.
+# country: Indeed/Glassdoor country (JobSpy name, lowercase). LinkedIn uses location as free text.
+# Supported European countries include: austria, belgium, bulgaria, croatia, cyprus, czech republic,
+# denmark, estonia, finland, france, germany, greece, hungary, ireland, italy, latvia, lithuania,
+# luxembourg, malta, netherlands, norway, poland, portugal, romania, slovakia, slovenia, spain,
+# sweden, switzerland, uk. Glassdoor covers fewer of these; unsupported ones are skipped automatically.
+searches:
+  # Germany: EU Blue Card, reduced IT threshold
+  - { term: "software engineer", location: "Berlin, Germany", country: "germany" }
+  - { term: "backend engineer", location: "Munich, Germany", country: "germany" }
+  - { term: "AI engineer", location: "Germany", country: "germany" }
+  # Netherlands: recognised sponsors only
+  - { term: "software engineer", location: "Amsterdam, Netherlands", country: "netherlands" }
+  # Ireland: English-speaking, Critical Skills permit for tech
+  - { term: "software engineer", location: "Dublin, Ireland", country: "ireland" }
+  # Others worth trying; uncomment to enable
+  # - { term: "backend engineer", location: "Milan, Italy", country: "italy" }
+  # - { term: "software engineer", location: "Vienna, Austria", country: "austria" }
+  # - { term: "software engineer", location: "Stockholm, Sweden", country: "sweden" }
+  # - { term: "software engineer", location: "Lisbon, Portugal", country: "portugal" }
+  # - { term: "software engineer", location: "Barcelona, Spain", country: "spain" }
+  # - { term: "software engineer", location: "Luxembourg", country: "luxembourg" }
+  # - { term: "software engineer", location: "Paris, France", country: "france" }
+
+sites: ["linkedin", "indeed", "glassdoor"]
+hours_old: 48          # only jobs posted in the last N hours
+results_per_search: 30 # keep modest: job boards rate-limit aggressive scraping
+
+# Title must contain at least one of these (case-insensitive)
+title_include: ["engineer", "developer", "backend", "full stack", "fullstack", "ai", "cloud", "devops"]
+# Title containing any of these is dropped
+title_exclude: ["principal", "staff", "head of", "director", "intern", "werkstudent", "working student", "frontend", "front-end", "ios", "android", "sap"]
+
+# Phrases that suggest the employer sponsors or relocates
+sponsorship_keywords:
+  - "visa sponsorship"
+  - "sponsor your visa"
+  - "visa support"
+  - "relocation"
+  - "relocation package"
+  - "relocation support"
+  - "blue card"
+  - "work permit"
+  - "kennismigrant"
+  - "highly skilled migrant"
+# Phrases that usually mean you will be filtered out
+blocker_keywords:
+  - "no visa sponsorship"
+  - "unable to sponsor"
+  - "cannot sponsor"
+  - "must have the right to work"
+  - "eu citizenship"
+  - "fließend deutsch"
+  - "verhandlungssicher"
+  - "german c1"
+  - "german (c1"
+  - "fluent german"
+
+# Local LLM via Ollama (https://ollama.com). Set enabled: false to use keyword scoring only.
+llm:
+  enabled: true
+  base_url: "http://localhost:11434"
+  model: "qwen2.5:7b"
+  max_description_chars: 6000
+
+min_score_in_report: 50   # jobs scoring below this are hidden from the report
+
+# Your profile, used by the LLM to score fit. Paste/adjust from your CV.
+profile: |
+  Software Engineer, 3+ years. Backend, AI integrations, cloud automation.
+  Built a production multilingual LLM chatbot (Azure OpenAI, LangChain, LangGraph, GraphQL, WebSockets)
+  handling 40% of inbound customer chats. Serverless AWS (Lambda, EventBridge, SQS/SNS, DynamoDB, Bedrock),
+  IaC (CDK, CloudFormation, Terraform), TypeScript, Python, C#, Snowflake ETL.
+  AWS Certified Cloud Practitioner. English fluent, French fluent, German basic.
+  Non-EU (Tunisian): needs visa sponsorship to work in the EU.

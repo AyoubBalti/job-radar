@@ -1,0 +1,4 @@
+seen_jobs.db
+reports/
+__pycache__/
+.venv/
