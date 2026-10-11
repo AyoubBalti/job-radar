@@ -1,77 +1,235 @@
-# job-radar configuration. Edit freely.
+# job-radar 2.0 configuration. Edit freely.
 
-# Each search runs on every site below.
-# country: Indeed/Glassdoor country (JobSpy name, lowercase). LinkedIn uses location as free text.
-# Supported European countries include: austria, belgium, bulgaria, croatia, cyprus, czech republic,
-# denmark, estonia, finland, france, germany, greece, hungary, ireland, italy, latvia, lithuania,
-# luxembourg, malta, netherlands, norway, poland, portugal, romania, slovakia, slovenia, spain,
-# sweden, switzerland, uk. Glassdoor covers fewer of these; unsupported ones are skipped automatically.
-searches:
-  # Germany: EU Blue Card, reduced IT threshold
-  - { term: "software engineer", location: "Berlin, Germany", country: "germany" }
-  - { term: "backend engineer", location: "Munich, Germany", country: "germany" }
-  - { term: "AI engineer", location: "Germany", country: "germany" }
-  # Netherlands: recognised sponsors only
-  - { term: "software engineer", location: "Amsterdam, Netherlands", country: "netherlands" }
-  # Ireland: English-speaking, Critical Skills permit for tech
-  - { term: "software engineer", location: "Dublin, Ireland", country: "ireland" }
-  # Others worth trying; uncomment to enable
-  # - { term: "backend engineer", location: "Milan, Italy", country: "italy" }
-  # - { term: "software engineer", location: "Vienna, Austria", country: "austria" }
-  # - { term: "software engineer", location: "Stockholm, Sweden", country: "sweden" }
-  # - { term: "software engineer", location: "Lisbon, Portugal", country: "portugal" }
-  # - { term: "software engineer", location: "Barcelona, Spain", country: "spain" }
-  # - { term: "software engineer", location: "Luxembourg", country: "luxembourg" }
-  # - { term: "software engineer", location: "Paris, France", country: "france" }
+# ---------------------------------------------------------------------------
+# WHERE TO SEARCH (country-based)
+# Every term below runs in every country. `location` is free text for LinkedIn/Google,
+# `country` drives Indeed/Glassdoor (JobSpy names, lowercase). Unsupported combinations
+# are skipped automatically. Comment a country out to save time.
+# ---------------------------------------------------------------------------
+countries:
+  - { country: "germany",     location: "Germany" }      # EU Blue Card, low IT threshold
+  - { country: "netherlands", location: "Netherlands" }  # kennismigrant (recognised sponsors)
+  - { country: "ireland",     location: "Ireland" }      # Critical Skills permit
+  - { country: "france",      location: "France" }       # French speaker, Talent Passport
+  - { country: "belgium",     location: "Belgium" }      # French speaker
+  - { country: "luxembourg",  location: "Luxembourg" }   # French speaker
+  - { country: "spain",       location: "Spain" }
+  - { country: "portugal",    location: "Portugal" }
+  - { country: "sweden",      location: "Sweden" }
+  - { country: "denmark",     location: "Denmark" }
+  - { country: "austria",     location: "Austria" }
+  - { country: "italy",       location: "Italy" }
+  - { country: "finland",     location: "Finland" }
+  - { country: "poland",      location: "Poland" }
+  - { country: "switzerland", location: "Switzerland" }
 
-sites: ["linkedin", "indeed", "glassdoor"]
-hours_old: 48          # only jobs posted in the last N hours
-results_per_search: 30 # keep modest: job boards rate-limit aggressive scraping
+# Role terms searched in every country above.
+terms:
+  - "software engineer"
+  - "backend engineer"
+  - "AI engineer"
+  - "cloud engineer"
+  - "python developer"
+  - "typescript developer"
+  - "devops engineer"
+  - "LLM engineer"
 
-# Title must contain at least one of these (case-insensitive)
-title_include: ["engineer", "developer", "backend", "full stack", "fullstack", "ai", "cloud", "devops"]
-# Title containing any of these is dropped
-title_exclude: ["principal", "staff", "head of", "director", "intern", "werkstudent", "working student", "frontend", "front-end", "ios", "android", "sap"]
+# Extra queries that put sponsorship words INTO the search, so boards rank sponsoring
+# employers first. Applied to the first `sponsor_query_terms` terms only.
+sponsor_query_templates:
+  - "{term} visa sponsorship"
+  - "{term} relocation"
+sponsor_query_terms: 1
+
+# Optional one-off searches (e.g. a specific city), same shape as before.
+extra_searches: []
+  # - { term: "software engineer", location: "Berlin, Germany", country: "germany" }
+
+# Job boards scraped through JobSpy. "google" aggregates many smaller boards.
+sites: ["linkedin", "indeed", "glassdoor", "google"]
+hours_old: 72           # with seen-state below, 72h is safe for daily/every-2-days runs
+results_per_search: 40  # keep modest: boards rate-limit aggressive scraping
+delay_between_searches: 4   # seconds
+linkedin_fetch_description: true   # slower, but needed for sponsorship/language detection
+
+# ---------------------------------------------------------------------------
+# EXTRA SOURCES (free APIs / relocation boards). All are optional.
+# ---------------------------------------------------------------------------
+extra_sources:
+  arbeitnow:     # Germany-focused, English-friendly, often tags visa sponsorship. No key needed.
+    enabled: true
+    pages: 4
+  relocateme:    # relocate.me: every job there offers relocation. Best-effort HTML scraper.
+    enabled: true
+    queries: ["software engineer", "backend", "AI", "cloud", "devops", "python"]
+  remotive:      # remote jobs (filtered to worldwide / Europe / your countries)
+    enabled: true
+  remoteok:
+    enabled: true
+  himalayas:
+    enabled: true
+    pages: 5
+  adzuna:        # needs a free key from developer.adzuna.com (or env ADZUNA_APP_ID / ADZUNA_APP_KEY)
+    enabled: false
+    app_id: ""
+    app_key: ""
+    terms: 2
+
+# Remote jobs are kept only if their location text contains one of these (plus your countries).
+remote_allowed_regions: ["worldwide", "anywhere", "global", "europe", "emea", "eu", "european union", "european"]
+
+# Optional text file, one company per line (e.g. exported Dutch IND recognised sponsors,
+# UK/Ireland sponsor lists). Matching companies get a visa boost. Leave "" to disable.
+sponsor_companies_file: ""
+
+# ---------------------------------------------------------------------------
+# FILTERS
+# ---------------------------------------------------------------------------
+# Whole-word, case-insensitive. Title must contain at least one include term.
+title_include: ["engineer", "developer", "backend", "full stack", "fullstack", "full-stack",
+                "ai", "llm", "ml", "machine learning", "cloud", "devops", "platform", "software",
+                "python", "typescript"]
+# Title containing any of these is dropped.
+title_exclude: ["principal", "staff", "lead", "manager", "head of", "director", "vp",
+                "intern", "internship", "werkstudent", "working student", "praktikum", "trainee",
+                "stagiaire", "alternance", "apprentice",
+                "frontend", "front-end", "ios", "android", "sap", "salesforce",
+                "embedded", "hardware", "mechanical", "electrical", "civil",
+                "qa", "sdet", "sales engineer", "support engineer"]
 
 # Phrases that suggest the employer sponsors or relocates
 sponsorship_keywords:
   - "visa sponsorship"
   - "sponsor your visa"
+  - "sponsor visa"
+  - "sponsor work permits"
   - "visa support"
+  - "visa assistance"
+  - "visa and relocation"
+  - "sponsorship available"
+  - "we sponsor"
+  - "will sponsor"
+  - "can sponsor"
   - "relocation"
   - "relocation package"
   - "relocation support"
+  - "relocation assistance"
+  - "relocation bonus"
+  - "relocation allowance"
+  - "we relocate"
   - "blue card"
+  - "eu blue card"
   - "work permit"
+  - "critical skills"
   - "kennismigrant"
   - "highly skilled migrant"
-# Phrases that usually mean you will be filtered out
+  - "skilled worker"
+  - "tech visa"
+  - "umzugsunterstützung"
+  - "relocation-unterstützung"
+  - "visa-unterstützung"
+  - "aide à la relocalisation"
+  - "prise en charge du visa"
+
+# Phrases that usually mean visa/work-right filtering (-> job is capped low)
 blocker_keywords:
   - "no visa sponsorship"
+  - "no sponsorship"
   - "unable to sponsor"
   - "cannot sponsor"
+  - "can't sponsor"
+  - "will not sponsor"
+  - "do not sponsor"
+  - "does not sponsor"
+  - "not able to sponsor"
+  - "without sponsorship"
+  - "sponsorship is not available"
+  - "not offer visa"
   - "must have the right to work"
+  - "right to work in the eu"
+  - "right to work in the uk"
+  - "unrestricted right to work"
+  - "legally entitled to work"
+  - "legally authorized to work"
+  - "legally authorised to work"
+  - "authorized to work in the eu"
+  - "authorised to work in the eu"
   - "eu citizenship"
+  - "eu citizen"
+  - "eu work permit required"
+  - "eu work authorization"
+  - "valid work permit required"
+  - "already based in"
+  - "local candidates only"
+  - "security clearance"
+
+# Language requirements you can't meet (French and English are fine, German basic only)
+language_blockers:
+  - "fluent german"
+  - "german c1"
+  - "german c2"
+  - "german (c1"
+  - "german (c2"
+  - "german required"
+  - "german language required"
+  - "german native"
+  - "native german"
+  - "excellent german"
+  - "very good german"
+  - "good command of german"
+  - "business fluent german"
   - "fließend deutsch"
   - "verhandlungssicher"
-  - "german c1"
-  - "german (c1"
-  - "fluent german"
+  - "deutschkenntnisse"
+  - "muttersprache"
+  - "fluent dutch"
+  - "dutch speaking"
+  - "native dutch"
+  - "vloeiend nederlands"
+  - "nederlands vloeiend"
+  - "fluent italian"
+  - "native italian"
+  - "fluent spanish"
+  - "native spanish"
+  - "fluent swedish"
+  - "fluent danish"
+  - "fluent portuguese"
 
-# Local LLM via Ollama (https://ollama.com). Set enabled: false to use keyword scoring only.
+# ---------------------------------------------------------------------------
+# LOCAL LLM (Ollama). Set enabled: false for keyword scoring only.
+# Only the best `max_jobs` keyword-ranked jobs are sent to the model.
+# ---------------------------------------------------------------------------
 llm:
   enabled: true
   base_url: "http://localhost:11434"
-  model: "qwen2.5:7b"
+  model: "qwen2.5:7b"        # qwen2.5:14b scores noticeably better if your GPU/RAM allows
   max_description_chars: 6000
+  max_jobs: 150
+  num_ctx: 8192
+  timeout: 240
 
-min_score_in_report: 50   # jobs scoring below this are hidden from the report
+min_score_in_report: 50   # jobs scoring below this are hidden from the HTML report
+only_new_in_report: false # true = hide jobs already shown in earlier runs
+output_dir: "reports"
+state_file: "data/seen.json"
 
-# Your profile, used by the LLM to score fit. Paste/adjust from your CV.
+# ---------------------------------------------------------------------------
+# YOUR PROFILE (used by the LLM) and skills (used for keyword matching)
+# ---------------------------------------------------------------------------
 profile: |
-  Software Engineer, 3+ years. Backend, AI integrations, cloud automation.
+  Software Engineer, 3+ years (Pixartprinting, since Mar 2023). Backend, AI integrations, cloud automation.
   Built a production multilingual LLM chatbot (Azure OpenAI, LangChain, LangGraph, GraphQL, WebSockets)
-  handling 40% of inbound customer chats. Serverless AWS (Lambda, EventBridge, SQS/SNS, DynamoDB, Bedrock),
-  IaC (CDK, CloudFormation, Terraform), TypeScript, Python, C#, Snowflake ETL.
-  AWS Certified Cloud Practitioner. English fluent, French fluent, German basic.
+  handling 40% of inbound customer chats, and MailBot, an AI email-response system on AWS Bedrock + Lambda.
+  Serverless AWS (Lambda, EventBridge, SQS/SNS, DynamoDB, Bedrock), IaC (CDK, CloudFormation, Terraform),
+  TypeScript, Python, C#, Snowflake ETL, Zendesk API automation. Also used OpenAI and Anthropic APIs.
+  AWS Certified Cloud Practitioner; Solutions Architect Associate in progress.
+  Computer Science Engineering degree (ENIS, EUR-ACE accredited).
+  English fluent, French fluent, German basic. Prefers roles where English or French is the working language.
+  Target level: mid-level (about 3-4 years). Senior roles asking 6+ years are a poor fit.
   Non-EU (Tunisian): needs visa sponsorship to work in the EU.
+
+skills: ["python", "typescript", "javascript", "c#", "aws", "lambda", "eventbridge", "sqs", "sns",
+         "dynamodb", "bedrock", "cdk", "cloudformation", "terraform", "serverless", "azure",
+         "openai", "llm", "langchain", "langgraph", "rag", "graphql", "websocket", "websockets",
+         "snowflake", "etl", "zendesk", "github actions", "ci/cd", "node.js", "nodejs", "docker",
+         "microservices", "event-driven", "chatbot", "automation", "genai", "generative ai"]
