@@ -199,14 +199,27 @@ language_blockers:
 # LOCAL LLM (Ollama). Set enabled: false for keyword scoring only.
 # Only the best `max_jobs` keyword-ranked jobs are sent to the model.
 # ---------------------------------------------------------------------------
+# llm:
+#   enabled: true
+#   base_url: "http://localhost:11434"
+#   model: "qwen2.5:7b"        # qwen2.5:14b scores noticeably better if your GPU/RAM allows
+#   max_description_chars: 6000
+#   max_jobs: 150
+#   num_ctx: 8192
+#   timeout: 240
 llm:
   enabled: true
   base_url: "http://localhost:11434"
-  model: "qwen2.5:7b"        # qwen2.5:14b scores noticeably better if your GPU/RAM allows
+  model: "qwen2.5:14b"       # run once: ollama pull qwen2.5:14b
   max_description_chars: 6000
   max_jobs: 150
   num_ctx: 8192
   timeout: 240
+ 
+min_score_in_report: 50   # jobs scoring below this are hidden from the HTML report
+only_new_in_report: false # true = hide jobs already shown in earlier runs
+output_dir: "reports"
+state_file: "data/seen.json"
 
 min_score_in_report: 50   # jobs scoring below this are hidden from the HTML report
 only_new_in_report: false # true = hide jobs already shown in earlier runs
